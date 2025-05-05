@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: ShortLink
+
+shortlink:
+  concurrency:
+    encode:
+      request-limit: 10
+    decode:
+      request-limit: 10
