@@ -12,53 +12,33 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-
 import static com.charleskim.shortlink.constants.ShortLinkConstants.BASE_URL;
 
 @RestController
 public class UrlShortenerController {
 
     private final UrlShortenerService urlShortenerService;
-    private final Semaphore encodeRequestSemaphore;
-    private final Semaphore decodeRequestSemaphore;
 
-    public UrlShortenerController(UrlShortenerService urlShortenerService, Semaphore encodeRequestSemaphore,
-                                  Semaphore decodeRequestSemaphore) {
+    public UrlShortenerController(UrlShortenerService urlShortenerService) {
         this.urlShortenerService = urlShortenerService;
-        this.encodeRequestSemaphore = encodeRequestSemaphore;
-        this.decodeRequestSemaphore = decodeRequestSemaphore;
     }
 
     @PostMapping("/encode")
     public ResponseEntity<EncodeResponse> encode(@Valid @RequestBody EncodeRequest encodeRequest) throws InterruptedException {
-        if (!encodeRequestSemaphore.tryAcquire(0, TimeUnit.SECONDS)) {
-            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build();
-        }
-        try {
-            String shortUrl = urlShortenerService.encodeUrl(encodeRequest.getOriginalUrl());
-            return ResponseEntity.ok(new EncodeResponse(shortUrl));
-        } finally {
-            encodeRequestSemaphore.release();
-        }
+        String shortUrl = urlShortenerService.encodeUrl(encodeRequest.getOriginalUrl());
+
+        return ResponseEntity.ok(new EncodeResponse(shortUrl));
     }
 
     @PostMapping("/decode")
     public ResponseEntity<DecodeResponse> decode(@Valid @RequestBody DecodeRequest decodeRequest) throws InterruptedException {
-        if (!decodeRequestSemaphore.tryAcquire(0, TimeUnit.SECONDS)) {
-            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build();
+        validateShortUrl(decodeRequest.getShortUrl());
+        String originalUrl = urlShortenerService.decodeUrl(decodeRequest.getShortUrl());
+        if (originalUrl == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
-        try {
-            validateShortUrl(decodeRequest.getShortUrl());
-            String originalUrl = urlShortenerService.decodeUrl(decodeRequest.getShortUrl());
-            if (originalUrl == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-            }
-            return ResponseEntity.ok(new DecodeResponse(originalUrl));
-        } finally {
-            decodeRequestSemaphore.release();
-        }
+
+        return ResponseEntity.ok(new DecodeResponse(originalUrl));
     }
 
     private void validateShortUrl(String shortUrl) {

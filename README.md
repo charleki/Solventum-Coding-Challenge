@@ -64,8 +64,3 @@ java -jar target/shortlink-0.0.1-SNAPSHOT.jar \
   --shortlink.concurrency.encode.request-limit=10 \
   --shortlink.concurrency.decode.request-limit=10
 ```
-
-## Notes
-
-Concurrency limits are enforced using a Semaphore directly in the controller for simplicity and clarity. In a production
-environment, this logic could be moved to an interceptor for better scalability and separation of concerns.
