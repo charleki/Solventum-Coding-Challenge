@@ -45,7 +45,8 @@ public class UrlShortenerController {
         if (!shortUrl.startsWith(BASE_URL)) {
             throw new IllegalArgumentException("Invalid short URL.");
         }
-        String shortKey = shortUrl.substring((BASE_URL.length()));
+        String shortKey = shortUrl.substring(BASE_URL.length());
+
         if (shortKey.isEmpty()) {
             throw new IllegalArgumentException("Missing short key in URL.");
         }
